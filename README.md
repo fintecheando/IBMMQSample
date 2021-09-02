@@ -10,7 +10,7 @@ cd ..
 
 mkdir -p src/com/ibm/mq/samples/jms/
 cd src/com/ibm/mq/samples/jms/
-curl -o JmsPutGet.java https://raw.githubusercontent.com/ibm-messaging/mq-dev-samples/master/gettingStarted/jms/com/ibm/mq/samples/jms/JmsPutGet.java
+curl -o JmsPutGet.java https://raw.githubusercontent.com/fintecheando/IBMMQSample/main/com/ibm/mq/samples/jms/JmsPutGet.java
 cd ../../../../../../
 
 javac -cp ./lib/com.ibm.mq.allclient-9.2.3.0.jar:./lib/javax.jms-api-2.0.1.jar src/com/ibm/mq/samples/jms/JmsPutGet.java
