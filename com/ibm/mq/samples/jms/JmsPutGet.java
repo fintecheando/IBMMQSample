@@ -22,6 +22,7 @@ import javax.jms.JMSContext;
 import javax.jms.JMSException;
 import javax.jms.JMSProducer;
 import javax.jms.TextMessage;
+import javax.jms.Message;
 
 import com.ibm.msg.client.jms.JmsConnectionFactory;
 import com.ibm.msg.client.jms.JmsFactoryFactory;
@@ -29,6 +30,8 @@ import com.ibm.msg.client.wmq.WMQConstants;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+
+import java.util.Random;
 
 /**
  * A minimal and simple application for Point-to-point messaging with reconnect for an HA Multi Instance WMQ Manager.
@@ -77,38 +80,41 @@ public class JmsPutGet {
 		JMSProducer producer = null;
 		JMSConsumer consumer = null;		
 		LocalDateTime now = null;
+		TextMessage message = null;
+		//long uniqueNumber;
 
 		try {
 			
         	setupResources();
-
-			long uniqueNumber = System.currentTimeMillis() % 1000;
-			TextMessage message = context.createTextMessage("Your lucky number today is " + uniqueNumber);
+			
 			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu/MM/dd HH:mm:ss");
 			
 			for(int i=0; i>=0; i++){
+				//uniqueNumber = System.currentTimeMillis() % 1000;				
+				String correlationId = RandomString();
+				//System.out.println("Mensaje de valor aleatorio " + correlationId + " con CorrelationId "+correlationId);
+			    message = context.createTextMessage("Mensaje de valor aleatorio " + correlationId);
+				message.setJMSCorrelationID(correlationId);
 				producer = context.createProducer();
 				producer.send(destination, message);
-				//System.out.println("Sent message:\n " + i + " " + message);
-				System.out.println("\nMensaje enviado:\n " + i );
+				//System.out.println("Mensaje enviado: "+message);
 				now = LocalDateTime.now();
-				System.out.println(dtf.format(now));
-				consumer = context.createConsumer(destination); // autoclosable
-				String receivedMessage = consumer.receiveBody(String.class, 15000); // in ms or 15 seconds
-				//System.out.println("\nReceived message:\n " + i + " " + receivedMessage);
-				System.out.println("\nMensaje recibido:\n " + i );
+				System.out.println(dtf.format(now) + " ID de Mensaje enviado: " + i + " con contenido " + message.getText() );
+				String jmsCorrelationID = " JMSCorrelationID = '" + message.getJMSCorrelationID() + "'";
+				//System.out.println("Selector "+jmsCorrelationID);
+				consumer = context.createConsumer(destination,jmsCorrelationID); // autoclosable								
+				Message receivedMessage1 = consumer.receive(15000);// in ms or 15 seconds		
+				//System.out.println("Mensaje recibido: "+receivedMessage1);
 				now = LocalDateTime.now();
-				System.out.println(dtf.format(now));
-				Thread.sleep(1000);
-			}
-			context.close();
-
-			recordSuccess();
+				System.out.println(dtf.format(now) + " ID de Mensaje recibido: " + i + " con contenido " + receivedMessage1.getBody(String.class)); 								
+				recordSuccess();
+				Thread.sleep(2000);
+			}			
 		} catch (Exception ex) {
+			context.close();
 			recordFailure(ex);
-			System.out.println("DETECTING ERROR... RECONNECTING");
-            setupResources();
-			
+			System.out.println("CONNECTION CLOSED");
+            //setupResources();			
 		}
 
 	} // end main()
@@ -154,6 +160,24 @@ public class JmsPutGet {
             } 
         } 
     }
+
+	public static String RandomString() {
+ 
+		int leftLimit = 97; // letter 'a'
+		int rightLimit = 122; // letter 'z'
+		int targetStringLength = 10;
+		Random random = new Random();
+		StringBuilder buffer = new StringBuilder(targetStringLength);
+		for (int i = 0; i < targetStringLength; i++) {
+			int randomLimitedInt = leftLimit + (int) 
+			  (random.nextFloat() * (rightLimit - leftLimit + 1));
+			buffer.append((char) randomLimitedInt);
+		}
+		String generatedString = buffer.toString();	
+		//System.out.println(generatedString);
+		return generatedString;
+	}
+	
 
 	/**
 	 * Record this run as successful.
