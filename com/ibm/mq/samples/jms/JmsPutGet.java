@@ -88,30 +88,31 @@ public class JmsPutGet {
         	setupResources();
 			
 			DateTimeFormatter dtf = DateTimeFormatter.ofPattern("uuuu/MM/dd HH:mm:ss");
+			producer = context.createProducer();
 			
 			for(int i=0; i>=0; i++){
 				//uniqueNumber = System.currentTimeMillis() % 1000;				
 				String correlationId = RandomString();
 				//System.out.println("Mensaje de valor aleatorio " + correlationId + " con CorrelationId "+correlationId);
 			    message = context.createTextMessage("Mensaje de valor aleatorio " + correlationId);
-				message.setJMSCorrelationID(correlationId);
-				producer = context.createProducer();
+				message.setJMSCorrelationID(correlationId);				
 				producer.send(destination, message);
 				//System.out.println("Mensaje enviado: "+message);
 				now = LocalDateTime.now();
 				System.out.println(dtf.format(now) + " ID de Mensaje enviado: " + i + " con contenido " + message.getText() );
 				String jmsCorrelationID = " JMSCorrelationID = '" + message.getJMSCorrelationID() + "'";
 				//System.out.println("Selector "+jmsCorrelationID);
-				consumer = context.createConsumer(destination,jmsCorrelationID); // autoclosable								
+				consumer = context.createConsumer(destination,jmsCorrelationID); // it must be closed
 				Message receivedMessage1 = consumer.receive(15000);// in ms or 15 seconds		
 				//System.out.println("Mensaje recibido: "+receivedMessage1);
 				now = LocalDateTime.now();
 				System.out.println(dtf.format(now) + " ID de Mensaje recibido: " + i + " con contenido " + receivedMessage1.getBody(String.class)); 								
+				Thread.sleep(1000);
 				recordSuccess();
-				Thread.sleep(2000);
+				consumer.close(); //closing 				
 			}			
-		} catch (Exception ex) {
 			context.close();
+		} catch (Exception ex) {			
 			recordFailure(ex);
 			System.out.println("CONNECTION CLOSED");
             //setupResources();			
